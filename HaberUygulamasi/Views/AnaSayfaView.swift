@@ -22,28 +22,41 @@ struct AnaSayfaView: View {
                 }
 
                 if !gorselliHaberler.isEmpty {
-                    TabView(selection: $currentIndex) {
-                        ForEach(Array(gorselliHaberler.prefix(5).enumerated()), id: \.offset) { index, article in
-                            ZStack(alignment: .bottomLeading) {
-                                if let imageUrl = article.urlToImage, let url = URL(string: imageUrl) {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable().aspectRatio(contentMode: .fill)
-                                            .frame(height: 220).clipped()
-                                    } placeholder: { ProgressView() }
+                    ZStack {
+                        TabView(selection: $currentIndex) {
+                            ForEach(Array(gorselliHaberler.prefix(5).enumerated()), id: \.offset) { index, article in
+                                ZStack(alignment: .bottomLeading) {
+                                    if let imageUrl = article.urlToImage, let url = URL(string: imageUrl) {
+                                        AsyncImage(url: url) { image in
+                                            image.resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(height: 220)
+                                                .clipped()
+                                                .overlay(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [Color.black.opacity(0.6), Color.clear]),
+                                                        startPoint: .bottom,
+                                                        endPoint: .top
+                                                    )
+                                                )
+                                        } placeholder: { ProgressView() }
+                                    }
+                                    Text(article.title)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding(12)
                                 }
-                                Text(article.title)
-                                    .font(.caption).foregroundColor(.white)
-                                    .padding(8).background(Color.black.opacity(0.6))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                                .tag(index)
                             }
-                            .cornerRadius(10).padding(.horizontal)
-                            .tag(index)
                         }
-                    }
-                    .tabViewStyle(PageTabViewStyle())
-                    .frame(height: 240)
-                    .onReceive(timer) { _ in
-                        withAnimation {
-                            currentIndex = (currentIndex + 1) % max(gorselliHaberler.prefix(5).count, 1)
+                        .tabViewStyle(PageTabViewStyle())
+                        .frame(height: 240)
+                        .onReceive(timer) { _ in
+                            withAnimation {
+                                currentIndex = (currentIndex + 1) % max(gorselliHaberler.prefix(5).count, 1)
+                            }
                         }
                     }
                 }
@@ -52,30 +65,24 @@ struct AnaSayfaView: View {
                     VStack(spacing: 12) {
                         ForEach(gorselliHaberler) { article in
                             NavigationLink(destination: HaberDetayView(article: article)) {
-                                HStack(alignment: .top, spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(article.title).font(.headline).foregroundColor(.primary)
-                                        Text(article.description?.prefix(50) ?? "") + Text("...")
-                                            .font(.subheadline).foregroundColor(.secondary)
-                                    }
-                                    Spacer()
-                                    if let imageUrl = article.urlToImage, let url = URL(string: imageUrl) {
-                                        AsyncImage(url: url) { image in
-                                            image.resizable().aspectRatio(contentMode: .fill)
-                                                .frame(width: 100, height: 80).clipped().cornerRadius(6)
-                                        } placeholder: { ProgressView() }
-                                    }
-                                }
-                                .padding().background(Color.gray.opacity(0.1))
-                                .cornerRadius(10).padding(.horizontal)
+                                CardView(article: article)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(.top)
                 }
+                .background(Color(.systemGroupedBackground))
             }
             .navigationTitle("Haberler")
         }
-        .onAppear { viewModel.fetchNews() }
+        .onAppear {
+            if hasInternetConnection() {
+                viewModel.fetchNews()
+            } else {
+                viewModel.loadLocalArticles()
+            }
+        }
     }
 
     private func kategoriButonu(_ ad: String) -> some View {
@@ -83,4 +90,8 @@ struct AnaSayfaView: View {
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Color.blue.opacity(0.2)).cornerRadius(10)
     }
+}
+
+func hasInternetConnection() -> Bool {
+    return NetworkMonitor.shared.isConnected
 }

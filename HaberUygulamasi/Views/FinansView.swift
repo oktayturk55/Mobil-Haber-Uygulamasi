@@ -4,11 +4,18 @@ struct FinansView: View {
     @StateObject var viewModel = NewsViewModel()
 
     var body: some View {
-        List(viewModel.articles) { article in
-            NavigationLink(destination: HaberDetayView(article: article)) {
-                Text(article.title)
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(viewModel.articles) { article in
+                    NavigationLink(destination: HaberDetayView(article: article)) {
+                        CardView(article: article)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
+            .padding(.top)
         }
+        .background(Color(.systemGroupedBackground))
         .navigationTitle("Finans")
         .onAppear {
             viewModel.fetchNews(category: "business")
